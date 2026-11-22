@@ -62,11 +62,15 @@ BACKUP=$(kubectl -n $NS get configmap research-data -o jsonpath='{.data.research
 curl -s -o /dev/null "${RESOLVE[@]}" -X POST --data-urlencode "title=$STAMP" \
      --data-urlencode "body=round trip test" "$A/research"
 kubectl -n $NS rollout status deployment/app-research --timeout=120s
-for i in $(seq 1 60); do      # Ingress needs a moment to switch to the new pods
-  curl -s "${RESOLVE[@]}" "$W/research" | grep -q "$STAMP" && break
+# The Ingress needs a moment to drop the old pods from its endpoints, and the
+# Service spreads requests over 2 replicas, so wait for 6 hits in a row.
+ok=0
+for i in $(seq 1 90); do
+  if curl -s "${RESOLVE[@]}" "$W/research" | grep -q "$STAMP"; then ok=$((ok+1)); else ok=0; fi
+  [[ $ok -ge 6 ]] && break
   sleep 1
 done
-echo "  new data visible after ${i}s"
+echo "  new data served by every pod after ${i}s"
 check "$W/research" "$STAMP"
 
 # put the real summary back
