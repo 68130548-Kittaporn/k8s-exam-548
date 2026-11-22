@@ -1,0 +1,64 @@
+# app-research: www.iam-548.com/research  (seminar research summary)
+# Data: ConfigMap research-data (research.json), editable from admin-548
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-research
+  namespace: iam-548
+  labels: { app: app-research }
+spec:
+  replicas: 2
+  selector:
+    matchLabels: { app: app-research }
+  template:
+    metadata:
+      labels: { app: app-research }
+    spec:
+      containers:
+        - name: research
+          image: python:3.12-alpine
+          command: ["python", "-u", "/app/app.py"]
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - { name: PORT, value: "8080" }
+            - { name: DATA_DIR, value: /data }
+          envFrom:
+            - configMapRef: { name: site-config }
+          volumeMounts:
+            - { name: code, mountPath: /app, readOnly: true }
+            - { name: common, mountPath: /common, readOnly: true }
+            - { name: data, mountPath: /data, readOnly: true }
+          readinessProbe:
+            httpGet: { path: /healthz, port: http }
+            initialDelaySeconds: 2
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: { path: /healthz, port: http }
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          resources:
+            requests: { cpu: 20m, memory: 32Mi }
+            limits: { cpu: 200m, memory: 128Mi }
+      volumes:
+        - name: code
+          configMap: { name: research-code }  # generated from apps/research/app.py
+        - name: common
+          configMap: { name: app-common }
+        - name: data
+          configMap: { name: research-data }  # data/research.json
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: app-research
+  namespace: iam-548
+  labels: { app: app-research }
+spec:
+  type: ClusterIP
+  selector: { app: app-research }
+  ports:
+    - name: http
+      port: 80
+      targetPort: http

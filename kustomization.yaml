@@ -1,0 +1,40 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - k8s/00-namespace.yaml
+  - k8s/10-portal.yaml
+  - k8s/20-research.yaml
+  - k8s/30-api.yaml
+  - k8s/40-admin.yaml
+  - k8s/50-ingress.yaml
+
+# Code ConfigMaps: name gets a hash suffix, so editing app.py and running
+# `kubectl apply -k .` again rolls the Deployment automatically.
+configMapGenerator:
+  - name: app-common
+    namespace: iam-548
+    files: [apps/common.py]
+  - name: portal-code
+    namespace: iam-548
+    files: [apps/portal/app.py]
+  - name: research-code
+    namespace: iam-548
+    files: [apps/research/app.py]
+  - name: api-code
+    namespace: iam-548
+    files: [apps/api/app.py]
+  - name: admin-code
+    namespace: iam-548
+    files: [apps/admin/app.py]
+
+  # Data ConfigMaps: fixed names, because admin-548 patches them by name
+  # (RBAC resourceNames). Re-applying resets them to the files in data/.
+  - name: portal-data
+    namespace: iam-548
+    files: [data/portal.json, data/photo.jpg]
+    options: { disableNameSuffixHash: true }
+  - name: research-data
+    namespace: iam-548
+    files: [data/research.json]
+    options: { disableNameSuffixHash: true }

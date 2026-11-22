@@ -1,0 +1,64 @@
+# portal-548: www.iam-548.com/  (photo, name, student ID)
+# Data: ConfigMap portal-data (portal.json + photo), editable from admin-548
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: portal-548
+  namespace: iam-548
+  labels: { app: portal-548 }
+spec:
+  replicas: 2
+  selector:
+    matchLabels: { app: portal-548 }
+  template:
+    metadata:
+      labels: { app: portal-548 }
+    spec:
+      containers:
+        - name: portal
+          image: python:3.12-alpine
+          command: ["python", "-u", "/app/app.py"]
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - { name: PORT, value: "8080" }
+            - { name: DATA_DIR, value: /data }
+          envFrom:
+            - configMapRef: { name: site-config }
+          volumeMounts:
+            - { name: code, mountPath: /app, readOnly: true }
+            - { name: common, mountPath: /common, readOnly: true }
+            - { name: data, mountPath: /data, readOnly: true }
+          readinessProbe:
+            httpGet: { path: /healthz, port: http }
+            initialDelaySeconds: 2
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: { path: /healthz, port: http }
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          resources:
+            requests: { cpu: 20m, memory: 32Mi }
+            limits: { cpu: 200m, memory: 128Mi }
+      volumes:
+        - name: code
+          configMap: { name: portal-code }    # generated from apps/portal/app.py
+        - name: common
+          configMap: { name: app-common }     # generated from apps/common.py
+        - name: data
+          configMap: { name: portal-data }    # data/portal.json + data/photo.jpg
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: portal-548
+  namespace: iam-548
+  labels: { app: portal-548 }
+spec:
+  type: ClusterIP
+  selector: { app: portal-548 }
+  ports:
+    - name: http
+      port: 80
+      targetPort: http

@@ -1,0 +1,62 @@
+# Ingress 1: www.iam-548.com (and www.id-548.com), path-based routing
+#   /research   -> app-research
+#   /api-548    -> api-548
+#   /           -> portal-548   (everything else)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: www-ingress
+  namespace: iam-548
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: www.iam-548.com
+      http:
+        paths:
+          - path: /research
+            pathType: Prefix
+            backend:
+              service: { name: app-research, port: { number: 80 } }
+          - path: /api-548
+            pathType: Prefix
+            backend:
+              service: { name: api-548, port: { number: 80 } }
+          - path: /
+            pathType: Prefix
+            backend:
+              service: { name: portal-548, port: { number: 80 } }
+    - host: www.id-548.com          # the assignment also names www.id-xxx.com: same routes
+      http:
+        paths:
+          - path: /research
+            pathType: Prefix
+            backend:
+              service: { name: app-research, port: { number: 80 } }
+          - path: /api-548
+            pathType: Prefix
+            backend:
+              service: { name: api-548, port: { number: 80 } }
+          - path: /
+            pathType: Prefix
+            backend:
+              service: { name: portal-548, port: { number: 80 } }
+---
+# Ingress 2: admin.iam-548.com -> admin-548
+# Separate object so the larger upload limit (photo) applies to admin only.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: admin-ingress
+  namespace: iam-548
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: 2m
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: admin.iam-548.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service: { name: admin-548, port: { number: 80 } }

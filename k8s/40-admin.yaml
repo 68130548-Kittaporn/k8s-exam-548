@@ -1,0 +1,99 @@
+# admin-548: admin.iam-548.com  (buttons to edit portal or research data)
+# It edits the ConfigMaps through the Kubernetes API, so it gets its own
+# ServiceAccount with the smallest permissions it needs (RBAC).
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: admin-548
+  namespace: iam-548
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: admin-548-editor
+  namespace: iam-548
+rules:
+  # read + change only the two data ConfigMaps
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    resourceNames: ["portal-data", "research-data"]
+    verbs: ["get", "patch"]
+  # restart only the two Deployments that show that data
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    resourceNames: ["portal-548", "app-research"]
+    verbs: ["get", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: admin-548-editor
+  namespace: iam-548
+subjects:
+  - kind: ServiceAccount
+    name: admin-548
+    namespace: iam-548
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: admin-548-editor
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: admin-548
+  namespace: iam-548
+  labels: { app: admin-548 }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: admin-548 }
+  template:
+    metadata:
+      labels: { app: admin-548 }
+    spec:
+      serviceAccountName: admin-548
+      containers:
+        - name: admin
+          image: python:3.12-alpine
+          command: ["python", "-u", "/app/app.py"]
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - { name: PORT, value: "8080" }
+          envFrom:
+            - configMapRef: { name: site-config }
+          volumeMounts:
+            - { name: code, mountPath: /app, readOnly: true }
+            - { name: common, mountPath: /common, readOnly: true }
+          readinessProbe:
+            httpGet: { path: /healthz, port: http }
+            initialDelaySeconds: 2
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: { path: /healthz, port: http }
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          resources:
+            requests: { cpu: 20m, memory: 32Mi }
+            limits: { cpu: 200m, memory: 128Mi }
+      volumes:
+        - name: code
+          configMap: { name: admin-code }     # generated from apps/admin/app.py
+        - name: common
+          configMap: { name: app-common }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: admin-548
+  namespace: iam-548
+  labels: { app: admin-548 }
+spec:
+  type: ClusterIP
+  selector: { app: admin-548 }
+  ports:
+    - name: http
+      port: 80
+      targetPort: http

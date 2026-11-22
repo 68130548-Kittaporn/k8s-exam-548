@@ -1,0 +1,13 @@
+# /etc/hosts  (Linux nodes k8s-control / k8s-worker1 / k8s-worker2)
+127.0.0.1        localhost
+127.0.1.1        k8s-control          # this node's own name (k8s-worker1 / k8s-worker2 on the workers)
+
+# Cluster nodes
+192.168.88.128   k8s-control
+192.168.88.129   k8s-worker1
+192.168.88.130   k8s-worker2
+
+# Exam domains -> node running ingress-nginx-controller (hostNetwork, pinned to k8s-worker2)
+# Check with: kubectl -n ingress-nginx get pod -o wide
+# Windows: C:\Windows\System32\drivers\etc\hosts (open Notepad as Administrator)
+192.168.88.130   www.iam-548.com www.id-548.com admin.iam-548.com

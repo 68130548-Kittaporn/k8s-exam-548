@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: iam-548
+  labels:
+    app.kubernetes.io/part-of: iam-548
+---
+# Settings shared by every app (menu links, API path)
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: site-config
+  namespace: iam-548
+data:
+  WWW_URL: "http://www.iam-548.com"
+  ADMIN_URL: "http://admin.iam-548.com"
+  API_PREFIX: "api-548"
+  TZ: "Asia/Bangkok"

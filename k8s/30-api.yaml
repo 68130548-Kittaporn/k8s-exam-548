@@ -1,0 +1,59 @@
+# api-548: www.iam-548.com/api-548/<message>  (message in large text, centred)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-548
+  namespace: iam-548
+  labels: { app: api-548 }
+spec:
+  replicas: 2
+  selector:
+    matchLabels: { app: api-548 }
+  template:
+    metadata:
+      labels: { app: api-548 }
+    spec:
+      containers:
+        - name: api
+          image: python:3.12-alpine
+          command: ["python", "-u", "/app/app.py"]
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - { name: PORT, value: "8080" }
+          envFrom:
+            - configMapRef: { name: site-config }   # API_PREFIX=api-548
+          volumeMounts:
+            - { name: code, mountPath: /app, readOnly: true }
+            - { name: common, mountPath: /common, readOnly: true }
+          readinessProbe:
+            httpGet: { path: /healthz, port: http }
+            initialDelaySeconds: 2
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: { path: /healthz, port: http }
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          resources:
+            requests: { cpu: 20m, memory: 32Mi }
+            limits: { cpu: 200m, memory: 128Mi }
+      volumes:
+        - name: code
+          configMap: { name: api-code }       # generated from apps/api/app.py
+        - name: common
+          configMap: { name: app-common }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-548
+  namespace: iam-548
+  labels: { app: api-548 }
+spec:
+  type: ClusterIP
+  selector: { app: api-548 }
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
