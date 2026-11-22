@@ -69,11 +69,10 @@ k8s-worker2:80  NGINX Ingress Controller (hostNetwork)
 │   ├── photo.jpg               รูปนักศึกษา
 │   └── research.json           หัวข้อและสรุปงานวิจัย
 ├── hosts/hosts.example         ตัวอย่างไฟล์ /etc/hosts
-├── scripts/
-│   ├── deploy.sh               deploy ทั้งหมด
-│   ├── verify.sh               ตรวจสถานะและทดสอบทุก route
-│   └── cleanup.sh              ลบทั้งหมด
-└── docs/                       รายงานและภาพหน้าจอ
+└── scripts/
+    ├── deploy.sh               deploy ทั้งหมด
+    ├── verify.sh               ตรวจสถานะและทดสอบทุก route
+    └── cleanup.sh              ลบทั้งหมด
 ```
 
 ## รายละเอียด manifest
@@ -194,8 +193,6 @@ curl http://admin.iam-548.com/
 ```bash
 bash scripts/verify.sh
 ```
-
-ภาพหน้าจอผลการทดสอบอยู่ใน `docs/screenshots/`
 
 ## ลบออก
 
